@@ -8,7 +8,7 @@ on:
 
 # UPDATE THESE VARIABLES to match your Azure resources
 env:
-  REGISTRY_NAME: myregistry12345.azurecr.io # Your ACR Login server name
+  REGISTRY_NAME: myregistery2003.azurecr.io # Your ACR Login server name
   IMAGE_NAME: simple-node-app               # Whatever you want to name your image
   WEBAPP_NAME: my-cool-node-app             # The name of your Azure Web App
 
