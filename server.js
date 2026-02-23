@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 const multer = require('multer');
 const { BlobServiceClient } = require('@azure/storage-blob');
 const Event = require('./models/Event');
@@ -14,6 +15,10 @@ const blobServiceClient = BlobServiceClient.fromConnectionString(
     process.env.AZURE_STORAGE_CONNECTION_STRING
 );
 const containerClient = blobServiceClient.getContainerClient('uploads');
+
+// ─── CORS ────────────────────────────────────────────────────────────────────
+// Allow requests from any origin (including file:// for local HTML testing)
+app.use(cors());
 
 app.use(express.json());
 
