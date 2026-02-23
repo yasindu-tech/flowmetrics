@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlowMetrics — File Upload Tester</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #0d0f17;
+            --surface: #13151f;
+            --card: #1a1d2e;
+            --border: #2a2d40;
+            --accent: #6c63ff;
+            --accent2: #a78bfa;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --text: #e2e8f0;
+            --muted: #64748b;
+            --radius: 16px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px 60px;
+            background-image:
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(108, 99, 255, 0.18) 0%, transparent 65%);
+        }
+
+        /* ── Header ───────────────────────────────────────────── */
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--accent2);
+            margin-bottom: 20px;
+        }
+
+        .logo-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 12px var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 8px var(--accent);
+            }
+
+            50% {
+                box-shadow: 0 0 24px var(--accent);
+            }
+        }
+
+        h1 {
+            font-size: clamp(28px, 5vw, 44px);
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 30%, var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+
+        header p {
+            color: var(--muted);
+            margin-top: 10px;
+            font-size: 15px;
+        }
+
+        /* ── Card ─────────────────────────────────────────────── */
+        .card {
+            width: 100%;
+            max-width: 680px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 36px;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, .5);
+        }
+
+        /* ── Endpoint Config ──────────────────────────────────── */
+        .config-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .input-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--muted);
+        }
+
+        input[type="text"],
+        input[type="url"] {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            padding: 10px 14px;
+            transition: border-color .2s, box-shadow .2s;
+            outline: none;
+            width: 100%;
+        }
+
+        input[type="text"]:focus,
+        input[type="url"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(108, 99, 255, .15);
+        }
+
+        /* ── Drop Zone ────────────────────────────────────────── */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color .25s, background .25s, transform .2s;
+            position: relative;
+            background: rgba(108, 99, 255, .03);
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(108, 99, 255, .07);
+            transform: scale(1.01);
+        }
+
+        .drop-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .drop-icon {
+            font-size: 48px;
+            margin-bottom: 14px;
+            display: block;
+            filter: drop-shadow(0 0 12px rgba(108, 99, 255, .4));
+        }
+
+        .drop-zone h2 {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .drop-zone p {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .drop-zone .browse {
+            color: var(--accent2);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        /* ── Preview Grid ─────────────────────────────────────── */
+        #preview-section {
+            display: none;
+            margin-top: 24px;
+        }
+
+        #preview-section.visible {
+            display: block;
+        }
+
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .preview-header span {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+
+        .clear-btn {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            padding: 4px 12px;
+            cursor: pointer;
+            transition: color .2s, border-color .2s;
+        }
+
+        .clear-btn:hover {
+            color: var(--error);
+            border-color: var(--error);
+        }
+
+        #preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .preview-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-item .file-icon {
+            font-size: 32px;
+        }
+
+        .preview-item .file-name {
+            font-size: 10px;
+            color: var(--muted);
+            padding: 0 6px;
+            text-align: center;
+            word-break: break-all;
+            max-width: 100%;
+        }
+
+        .preview-item .remove-item {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0, 0, 0, .7);
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            transition: background .2s;
+        }
+
+        .preview-item .remove-item:hover {
+            background: var(--error);
+        }
+
+        /* ── Upload Button ────────────────────────────────────── */
+        .upload-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            margin-top: 24px;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity .2s, transform .15s, box-shadow .2s;
+            box-shadow: 0 4px 24px rgba(108, 99, 255, .35);
+        }
+
+        .upload-btn:hover:not(:disabled) {
+            opacity: .9;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 32px rgba(108, 99, 255, .5);
+        }
+
+        .upload-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .upload-btn:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ── Progress Bar ─────────────────────────────────────── */
+        #progress-wrap {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #progress-wrap.visible {
+            display: block;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .progress-bar-bg {
+            background: var(--surface);
+            border-radius: 99px;
+            height: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 99px;
+            transition: width .3s ease;
+            box-shadow: 0 0 10px rgba(108, 99, 255, .5);
+        }
+
+        /* ── Results ──────────────────────────────────────────── */
+        #results-section {
+            margin-top: 28px;
+        }
+
+        .result-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 18px;
+            margin-bottom: 12px;
+            animation: slideIn .3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-item.success {
+            border-color: rgba(16, 185, 129, .35);
+        }
+
+        .result-item.error {
+            border-color: rgba(239, 68, 68, .35);
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            padding: 3px 10px;
+            border-radius: 99px;
+        }
+
+        .status-badge.success {
+            background: rgba(16, 185, 129, .15);
+            color: var(--success);
+        }
+
+        .status-badge.error {
+            background: rgba(239, 68, 68, .15);
+            color: var(--error);
+        }
+
+        .result-filename {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .result-url {
+            font-size: 13px;
+            color: var(--muted);
+            word-break: break-all;
+        }
+
+        .result-url a {
+            color: var(--accent2);
+            text-decoration: none;
+        }
+
+        .result-url a:hover {
+            text-decoration: underline;
+        }
+
+        .copy-btn {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            color: var(--muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            padding: 4px 10px;
+            cursor: pointer;
+            transition: color .2s, border-color .2s;
+            flex-shrink: 0;
+        }
+
+        .copy-btn:hover {
+            color: var(--accent2);
+            border-color: var(--accent2);
+        }
+
+        /* ── Spinner ──────────────────────────────────────────── */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, .3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ── Toast ────────────────────────────────────────────── */
+        .toast {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 18px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity .25s, transform .25s;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ── Divider ──────────────────────────────────────────── */
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 28px 0;
+        }
+
+        /* ── Responsive ───────────────────────────────────────── */
+        @media (max-width: 520px) {
+            .card {
+                padding: 24px 18px;
+            }
+
+            .config-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">
+            <div class="logo-dot"></div>
+            FlowMetrics
+        </div>
+        <h1>File Upload Tester</h1>
+        <p>Upload images &amp; files to Azure Blob Storage and get a live URL back</p>
+    </header>
+
+    <div class="card">
+
+        <!-- Endpoint config -->
+        <div class="config-row">
+            <div class="input-group">
+                <label for="endpoint-url">Upload Endpoint</label>
+                <input type="url" id="endpoint-url"
+                    value="https://my-cool-node-app-a2hcfngah9e5fbeh.southeastasia-01.azurewebsites.net/upload"
+                    placeholder="https://my-cool-node-app-a2hcfngah9e5fbeh.southeastasia-01.azurewebsites.net/upload" />
+            </div>
+            <div class="input-group" style="max-width:160px">
+                <label for="field-name">Form Field Name</label>
+                <input type="text" id="field-name" value="image" placeholder="image" />
+            </div>
+        </div>
+
+        <!-- Drop zone -->
+        <div class="drop-zone" id="drop-zone">
+            <input type="file" id="file-input" multiple accept="*/*" />
+            <span class="drop-icon">☁️</span>
+            <h2>Drag &amp; drop files here</h2>
+            <p>or <span class="browse">browse to choose files</span></p>
+            <p style="margin-top:8px;font-size:11px;color:var(--muted)">
+                Images, PDFs, and any other file type — max 50 MB each
+            </p>
+        </div>
+
+        <!-- Preview -->
+        <div id="preview-section">
+            <div class="preview-header">
+                <span id="file-count">0 file(s) selected</span>
+                <button class="clear-btn" id="clear-btn">✕ Clear all</button>
+            </div>
+            <div id="preview-grid"></div>
+        </div>
+
+        <!-- Upload button -->
+        <button class="upload-btn" id="upload-btn" disabled>
+            <span id="btn-label">Select files to upload</span>
+        </button>
+
+        <!-- Progress -->
+        <div id="progress-wrap">
+            <div class="progress-label">
+                <span id="progress-text">Uploading…</span>
+                <span id="progress-pct">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progress-bar"></div>
+            </div>
+        </div>
+
+        <hr class="divider" id="results-divider" style="display:none" />
+
+        <!-- Results -->
+        <div id="results-section"></div>
+
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const previewSec = document.getElementById('preview-section');
+        const previewGrd = document.getElementById('preview-grid');
+        const fileCount = document.getElementById('file-count');
+        const clearBtn = document.getElementById('clear-btn');
+        const uploadBtn = document.getElementById('upload-btn');
+        const btnLabel = document.getElementById('btn-label');
+        const progressWrap = document.getElementById('progress-wrap');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const progressPct = document.getElementById('progress-pct');
+        const resultsDiv = document.getElementById('results-section');
+        const resultsDivider = document.getElementById('results-divider');
+        const toast = document.getElementById('toast');
+        const endpointUrl = document.getElementById('endpoint-url');
+        const fieldName = document.getElementById('field-name');
+
+        let selectedFiles = [];
+
+        // ── Drag & Drop ──────────────────────────────────────────
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            addFiles([...e.dataTransfer.files]);
+        });
+        fileInput.addEventListener('change', () => addFiles([...fileInput.files]));
+
+        function addFiles(newFiles) {
+            // Avoid dupes by name+size
+            newFiles.forEach(f => {
+                if (!selectedFiles.find(x => x.name === f.name && x.size === f.size)) {
+                    selectedFiles.push(f);
+                }
+            });
+            renderPreviews();
+        }
+
+        function renderPreviews() {
+            previewGrd.innerHTML = '';
+            if (selectedFiles.length === 0) {
+                previewSec.classList.remove('visible');
+                uploadBtn.disabled = true;
+                btnLabel.textContent = 'Select files to upload';
+                return;
+            }
+            previewSec.classList.add('visible');
+            uploadBtn.disabled = false;
+            btnLabel.textContent = `Upload ${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''}`;
+            fileCount.textContent = `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} selected`;
+
+            selectedFiles.forEach((file, idx) => {
+                const item = document.createElement('div');
+                item.className = 'preview-item';
+
+                if (file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    item.appendChild(img);
+                } else {
+                    const icon = document.createElement('span');
+                    icon.className = 'file-icon';
+                    icon.textContent = getFileIcon(file.name);
+                    const name = document.createElement('span');
+                    name.className = 'file-name';
+                    name.textContent = file.name;
+                    item.appendChild(icon);
+                    item.appendChild(name);
+                }
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-item';
+                removeBtn.innerHTML = '&times;';
+                removeBtn.title = 'Remove';
+                removeBtn.addEventListener('click', () => {
+                    selectedFiles.splice(idx, 1);
+                    renderPreviews();
+                });
+                item.appendChild(removeBtn);
+                previewGrd.appendChild(item);
+            });
+        }
+
+        clearBtn.addEventListener('click', () => {
+            selectedFiles = [];
+            fileInput.value = '';
+            renderPreviews();
+        });
+
+        // ── Upload ───────────────────────────────────────────────
+        uploadBtn.addEventListener('click', uploadAll);
+
+        async function uploadAll() {
+            if (!selectedFiles.length) return;
+
+            const url = endpointUrl.value.trim() || 'https://my-cool-node-app-a2hcfngah9e5fbeh.southeastasia-01.azurewebsites.net/upload';
+            const field = fieldName.value.trim() || 'image';
+
+            uploadBtn.disabled = true;
+            btnLabel.innerHTML = '<div class="spinner"></div> Uploading…';
+            progressWrap.classList.add('visible');
+            progressBar.style.width = '0%';
+            progressPct.textContent = '0%';
+            resultsDivider.style.display = '';
+            resultsDiv.innerHTML = '';
+
+            const total = selectedFiles.length;
+            let done = 0;
+
+            for (const file of selectedFiles) {
+                progressText.textContent = `Uploading ${file.name}…`;
+                try {
+                    const fd = new FormData();
+                    fd.append(field, file);
+                    const res = await fetch(url, { method: 'POST', body: fd });
+                    let data;
+                    try { data = await res.json(); } catch { data = { error: 'Non-JSON response from server' }; }
+                    addResult(file.name, res.ok, data);
+                } catch (err) {
+                    addResult(file.name, false, { error: err.message });
+                }
+                done++;
+                const pct = Math.round((done / total) * 100);
+                progressBar.style.width = pct + '%';
+                progressPct.textContent = pct + '%';
+            }
+
+            progressText.textContent = `Done! ${total} file${total > 1 ? 's' : ''} processed.`;
+            uploadBtn.disabled = false;
+            btnLabel.textContent = `Upload ${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''}`;
+        }
+
+        function addResult(filename, success, data) {
+            const item = document.createElement('div');
+            item.className = `result-item ${success ? 'success' : 'error'}`;
+
+            const blobUrl = data.url || null;
+            const errorMsg = data.error || data.details || JSON.stringify(data);
+            const meta = success && data.size
+                ? ` &nbsp;·&nbsp; ${(data.size / 1024).toFixed(1)} KB &nbsp;·&nbsp; <code style="font-size:11px;opacity:.7">${data.mimeType || ''}</code>`
+                : '';
+
+            item.innerHTML = `
+        <div class="result-header">
+          <span class="status-badge ${success ? 'success' : 'error'}">
+            ${success ? '✓ Success' : '✗ Failed'}
+          </span>
+          <span class="result-filename" title="${filename}">${filename}${meta}</span>
+          ${blobUrl ? `<button class="copy-btn" onclick="copyUrl('${blobUrl}', this)">Copy URL</button>` : ''}
+        </div>
+        <div class="result-url">
+          ${blobUrl
+                    ? `<a href="${blobUrl}" target="_blank" rel="noopener">${blobUrl}</a>`
+                    : `<span style="color:var(--error)">${errorMsg}</span>`}
+        </div>
+      `;
+            resultsDiv.appendChild(item);
+        }
+
+        function copyUrl(url, btn) {
+            navigator.clipboard.writeText(url).then(() => {
+                btn.textContent = '✓ Copied!';
+                showToast('URL copied to clipboard!');
+                setTimeout(() => btn.textContent = 'Copy URL', 2000);
+            });
+        }
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        function stripHtml(html) {
+            const d = document.createElement('div');
+            d.innerHTML = html;
+            return d.textContent || d.innerText || html;
+        }
+
+        function getFileIcon(name) {
+            const ext = name.split('.').pop().toLowerCase();
+            const map = {
+                pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊',
+                ppt: '📋', pptx: '📋', zip: '🗜️', rar: '🗜️', mp4: '🎬',
+                mp3: '🎵', txt: '📃', json: '📦', csv: '📊',
+            };
+            return map[ext] || '📁';
+        }
+    </script>
+
+</body>
+
+</html>
