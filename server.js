@@ -21,6 +21,7 @@ const containerClient = blobServiceClient.getContainerClient('uploads');
 app.use(cors());
 
 app.use(express.json());
+app.use(express.static('public')); // Serve upload-test.html at /upload-test.html
 
 const port = process.env.PORT || 8080;
 const startTime = new Date();
@@ -41,6 +42,7 @@ app.get('/', (req, res) => {
         version: '1.0.0',
         dbStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
         endpoints: [
+            'GET  /upload-test.html  — file upload test UI',
             'GET  /health',
             'GET  /api/status',
             'POST /upload            — upload a file to Azure Blob Storage',
