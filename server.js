@@ -3,13 +3,9 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const multer = require('multer');
-const { BlobServiceClient } = require('@azure/storage-blob');
+const { BlobServiceClient, BlobSASPermissions } = require('@azure/storage-blob');
 const Event = require('./models/Event');
 const app = express();
-
-// ─── Multer (in-memory storage) ───────────────────────────────────────────────
-const upload = multer({ storage: multer.memoryStorage() });
 
 // ─── Azure Blob Storage ───────────────────────────────────────────────────────
 const blobServiceClient = BlobServiceClient.fromConnectionString(
@@ -98,29 +94,31 @@ app.get('/api/status', (req, res) => {
 
 // ─── Azure Blob Storage Routes ───────────────────────────────────────────────
 
-// POST /upload — Upload a file to Azure Blob Storage
-app.post('/upload', upload.single('image'), async (req, res) => {
+// GET /get-upload-pass — Get a VIP pass (SAS token) to upload directly to Azure
+app.get('/get-upload-pass', async (req, res) => {
     try {
-        const file = req.file;
-        if (!file) return res.status(400).json({ error: 'No file provided. Send a multipart/form-data request with field name "image".' });
+        if (!containerClient) return res.status(500).json({ error: 'Warehouse keys missing!' });
 
-        const blobName = Date.now() + '-' + file.originalname;
+        const fileName = req.query.fileName;
+        if (!fileName) return res.status(400).json({ error: 'File name is required.' });
+
+        const blobName = Date.now() + '-' + fileName;
         const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
-        await blockBlobClient.uploadData(file.buffer, {
-            blobHTTPHeaders: { blobContentType: file.mimetype },
+        const expiresOn = new Date(new Date().valueOf() + 10 * 60 * 1000); // 10 minutes from now
+        const sasUrl = await blockBlobClient.generateSasUrl({
+            permissions: BlobSASPermissions.parse("cw"),
+            expiresOn: expiresOn
         });
 
-        res.status(201).json({
-            message: 'File uploaded successfully ✅',
-            fileName: blobName,
+        res.json({
+            vipPassUrl: sasUrl,
             url: blockBlobClient.url,
-            size: file.size,
-            mimeType: file.mimetype,
+            fileName: blobName
         });
     } catch (err) {
-        console.error('Upload error:', err);
-        res.status(500).json({ error: 'Failed to upload file', details: err.message });
+        console.error('SAS generation error:', err);
+        res.status(500).json({ error: 'Failed to generate VIP pass', details: err.message });
     }
 });
 

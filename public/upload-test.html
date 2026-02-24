@@ -566,14 +566,14 @@
         <!-- Endpoint config -->
         <div class="config-row">
             <div class="input-group">
-                <label for="endpoint-url">Upload Endpoint</label>
+                <label for="endpoint-url">VIP Pass Endpoint</label>
                 <input type="url" id="endpoint-url"
-                    value="https://my-cool-node-app-a2hcfngah9e5fbeh.southeastasia-01.azurewebsites.net/upload"
-                    placeholder="https://my-cool-node-app-a2hcfngah9e5fbeh.southeastasia-01.azurewebsites.net/upload" />
+                    value="https://my-cool-node-app-a2hcfngah9e5fbeh.southeastasia-01.azurewebsites.net/get-upload-pass"
+                    placeholder="https://my-cool-node-app-a2hcfngah9e5fbeh.southeastasia-01.azurewebsites.net/get-upload-pass" />
             </div>
-            <div class="input-group" style="max-width:160px">
-                <label for="field-name">Form Field Name</label>
-                <input type="text" id="field-name" value="image" placeholder="image" />
+            <div class="input-group" style="max-width:160px; opacity:0.5; pointer-events:none;">
+                <label for="field-name">Direct to Warehouse!</label>
+                <input type="text" id="field-name" value="N/A" disabled />
             </div>
         </div>
 
@@ -724,11 +724,10 @@
         async function uploadAll() {
             if (!selectedFiles.length) return;
 
-            const url = endpointUrl.value.trim() || 'https://my-cool-node-app-a2hcfngah9e5fbeh.southeastasia-01.azurewebsites.net/upload';
-            const field = fieldName.value.trim() || 'image';
+            const url = endpointUrl.value.trim() || 'https://my-cool-node-app-a2hcfngah9e5fbeh.southeastasia-01.azurewebsites.net/get-upload-pass';
 
             uploadBtn.disabled = true;
-            btnLabel.innerHTML = '<div class="spinner"></div> Uploading…';
+            btnLabel.innerHTML = '<div class="spinner"></div> Processing…';
             progressWrap.classList.add('visible');
             progressBar.style.width = '0%';
             progressPct.textContent = '0%';
@@ -739,14 +738,39 @@
             let done = 0;
 
             for (const file of selectedFiles) {
-                progressText.textContent = `Uploading ${file.name}…`;
                 try {
-                    const fd = new FormData();
-                    fd.append(field, file);
-                    const res = await fetch(url, { method: 'POST', body: fd });
-                    let data;
-                    try { data = await res.json(); } catch { data = { error: 'Non-JSON response from server' }; }
-                    addResult(file.name, res.ok, data);
+                    // TRIP 1: Ask Node.js Server for a VIP Pass
+                    progressText.textContent = `1. Requesting VIP pass for ${file.name}…`;
+                    const passRes = await fetch(`${url}?fileName=${encodeURIComponent(file.name)}`);
+
+                    if (!passRes.ok) {
+                        const errText = await passRes.text();
+                        addResult(file.name, false, { error: errText });
+                        continue;
+                    }
+
+                    const passData = await passRes.json();
+
+                    // TRIP 2: Upload directly to the Azure storage warehouse!
+                    progressText.textContent = `2. Driving directly to warehouse for ${file.name}…`;
+                    const uploadRes = await fetch(passData.vipPassUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'x-ms-blob-type': 'BlockBlob',
+                            'Content-Type': file.type || 'application/octet-stream'
+                        },
+                        body: file
+                    });
+
+                    if (uploadRes.ok) {
+                        // Pass success down
+                        passData.size = file.size;
+                        passData.mimeType = file.type || 'application/octet-stream';
+                        addResult(file.name, true, passData);
+                    } else {
+                        addResult(file.name, false, { error: `Warehouse rejected the file. HTTP ${uploadRes.status}` });
+                    }
+
                 } catch (err) {
                     addResult(file.name, false, { error: err.message });
                 }
