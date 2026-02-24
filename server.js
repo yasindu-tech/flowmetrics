@@ -1,3 +1,4 @@
+if (!globalThis.crypto) globalThis.crypto = require('crypto'); // Node 18 compat shim
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
