@@ -42,7 +42,7 @@ app.get('/', (req, res) => {
             'GET  /upload-test.html  — file upload test UI',
             'GET  /health',
             'GET  /api/status',
-            'POST /upload            — upload a file to Azure Blob Storage',
+            'GET  /get-upload-pass   — get a VIP pass (SAS token) for Azure direct upload',
             'GET  /files             — list all files in Azure Blob Storage',
             'DELETE /files/:name     — delete a file from Azure Blob Storage',
             'POST /api/events        — create an event in Cosmos DB',
