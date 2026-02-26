@@ -68,6 +68,11 @@ app.get('/', (req, res) => {
     });
 });
 
+// Stop 404 noise in Application Insights for automated bot/scraper requests
+app.get('/meta.json', (req, res) => {
+    res.status(200).json({ status: "ok", app: "FlowMetrics" });
+});
+
 // Health check
 app.get('/health', (req, res) => {
     const uptimeSeconds = Math.floor((new Date() - startTime) / 1000);
