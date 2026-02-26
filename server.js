@@ -1,3 +1,18 @@
+// 1. INSTALL THE CAMERAS AT THE VERY TOP
+const appInsights = require("applicationinsights");
+
+// Only start the cameras if the secret connection string is provided by Azure
+if (process.env.APPLICATIONINSIGHTS_CONNECTION_STRING) {
+    appInsights.setup(process.env.APPLICATIONINSIGHTS_CONNECTION_STRING)
+        .setAutoCollectRequests(true)    // Track all incoming traffic
+        .setAutoCollectPerformance(true) // Track CPU and memory usage
+        .setAutoCollectExceptions(true)  // Catch all crashes and errors
+        .setAutoCollectDependencies(true)// Track database & warehouse connections
+        .setAutoCollectConsole(true)     // Capture all console.log() messages
+        .start();
+}
+
+// 2. THE REST OF YOUR NORMAL CODE
 if (!globalThis.crypto) globalThis.crypto = require('crypto'); // Node 18 compat shim
 require('dotenv').config();
 const express = require('express');
